@@ -38,8 +38,8 @@
             "defaultValue": "worker694_z1",
             "type": "String"
         },
-        "virtualNetworks_vnet_centralus_name": {
-            "defaultValue": "vnet-centralus",
+        "virtualNetworks_vnet_eastus2_name": {
+            "defaultValue": "vnet-eastus2",
             "type": "String"
         }
     },
@@ -49,7 +49,7 @@
             "type": "Microsoft.Compute/sshPublicKeys",
             "apiVersion": "2024-11-01",
             "name": "[parameters('sshPublicKeys_master_key_name')]",
-            "location": "centralus",
+            "location": "eastus2",
             "properties": {
                 "publicKey": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDLG4A4veUDwHru9pzSmgcSmisz86UDc7gH0v9K1Xv6dhQQa0a9QtM8o36zz6PlhAZBY+0SAAqariGnKascU+5I8YIA60bK2qP3TsIr4OZTLwRXxaRbBptr50bfGR4BHvyMA2fL6tPZbtfR68pzTtzs15ndltXflv2zggLYB+G/cZd6qFa827Fss3zcv2dU0T4PU3bLTUSO8ZuhmDL3LXFjQN5oITFxH6A+hq45qTncCbIGMarQweLUxGXrG7Y9LeJnl7H4osnT4go+Jkl1ugeOrV17slexvo+hOh7sfJf8vX4sthLQ6mPZKUepy8P5zahhLd8bVhcJewj1miv32ERtIYqUNZaY9hdHdlL7zqhcx7g9l5NLPuyqUKOqAj+vS9P3aWj6fQ72b1MImRykWZUEjz1LlsSJrCJE0ZUS/nDvRhiIIH10R7FBD+FRGa5Q0bJSNH3ZHXzeBFxX6fGNMDnom8Xk7nbx00tZhGIocS+KPcKajnhfmmqR4iEz/MPN+tU= generated-by-azure"
             }
@@ -58,7 +58,7 @@
             "type": "Microsoft.Compute/sshPublicKeys",
             "apiVersion": "2024-11-01",
             "name": "[parameters('sshPublicKeys_worker_key_name')]",
-            "location": "centralus",
+            "location": "eastus2",
             "properties": {
                 "publicKey": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDNFQh1Bf+u6foMBTqslns6RkORjYZFeoBFrKTjsSrL7Z9urtBHrbnLa4g1uRwZsF8fnac+C43OFYOzLcNdWyAircTFlBWOYjTZrbqqJZDOE8DaFfm3TVAJQ4ZYsyQ/Arab64GHmIX6aqzTtreoXFyuOJgktC7Kvg3162K6HF1d1loCFwc6Ya6WXmkJA1O0ZRw+ADHlWdh2jeW62KUW3CI3pDvS55+S9NkRiHpVnCFbNcXUvEppTEu3VbVrH0xdtxZ259T/Xn3fszoU3ofhUP1LDdEp4LM3wrsNoNZzf0/c6mt0GDDLd+hpYL+oYEdc1/CZFdvAddwkhHu/x2bt+lbwIrlTr8XBKndxZHVQeo+QoD8J8ZJdZz4UVdLK1R6CBuTsAcD53Nrqhl5BxsHObRjxUAPefZcBybJAsJUo74NAcQOoAHsa7R6dZMCYe0EcAiT1IPyX/tLMw1d+xzXGUGKWyu8wWKp2hpEVDvTFfOB4Zsru5ki5c2OYSdLcaAO0FKE= generated-by-azure"
             }
@@ -67,7 +67,7 @@
             "type": "Microsoft.Network/networkSecurityGroups",
             "apiVersion": "2024-07-01",
             "name": "[parameters('networkSecurityGroups_testnsg_name')]",
-            "location": "centralus",
+            "location": "eastus2",
             "properties": {
                 "securityRules": [
                     {
@@ -115,7 +115,7 @@
             "type": "Microsoft.Network/publicIPAddresses",
             "apiVersion": "2024-07-01",
             "name": "[parameters('publicIPAddresses_master_ip_name')]",
-            "location": "centralus",
+            "location": "eastus2",
             "sku": {
                 "name": "Standard",
                 "tier": "Regional"
@@ -135,7 +135,7 @@
             "type": "Microsoft.Network/publicIPAddresses",
             "apiVersion": "2024-07-01",
             "name": "[parameters('publicIPAddresses_worker_ip_name')]",
-            "location": "centralus",
+            "location": "eastus2",
             "sku": {
                 "name": "Standard",
                 "tier": "Regional"
@@ -154,8 +154,8 @@
         {
             "type": "Microsoft.Network/virtualNetworks",
             "apiVersion": "2024-07-01",
-            "name": "[parameters('virtualNetworks_vnet_centralus_name')]",
-            "location": "centralus",
+            "name": "[parameters('virtualNetworks_vnet_eastus2_name')]",
+            "location": "eastus2",
             "properties": {
                 "addressSpace": {
                     "addressPrefixes": [
@@ -165,8 +165,8 @@
                 "privateEndpointVNetPolicies": "Disabled",
                 "subnets": [
                     {
-                        "name": "snet-centralus-1",
-                        "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_centralus_name'), 'snet-centralus-1')]",
+                        "name": "snet-eastus2-1",
+                        "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_eastus2_name'), 'snet-eastus2-1')]",
                         "properties": {
                             "addressPrefixes": [
                                 "172.16.0.0/24"
@@ -186,7 +186,7 @@
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2024-11-01",
             "name": "[parameters('virtualMachines_master_name')]",
-            "location": "centralus",
+            "location": "eastus2",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_master839_z1_name'))]"
             ],
@@ -212,9 +212,6 @@
                         "name": "[concat(parameters('virtualMachines_master_name'), '_OsDisk_1_6b0ba8ce79fe414fbcfa93de4dead414')]",
                         "createOption": "FromImage",
                         "caching": "ReadWrite",
-                        "managedDisk": {
-                            "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_master_name'), '_OsDisk_1_6b0ba8ce79fe414fbcfa93de4dead414'))]"
-                        },
                         "deleteOption": "Delete"
                     },
                     "dataDisks": [],
@@ -240,8 +237,7 @@
                         }
                     },
                     "secrets": [],
-                    "allowExtensionOperations": true,
-                    "requireGuestProvisionSignal": true
+                    "allowExtensionOperations": true
                 },
                 "securityProfile": {
                     "uefiSettings": {
@@ -271,7 +267,7 @@
             "type": "Microsoft.Compute/virtualMachines",
             "apiVersion": "2024-11-01",
             "name": "[parameters('virtualMachines_worker_name')]",
-            "location": "centralus",
+            "location": "eastus2",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/networkInterfaces', parameters('networkInterfaces_worker694_z1_name'))]"
             ],
@@ -297,9 +293,6 @@
                         "name": "[concat(parameters('virtualMachines_worker_name'), '_OsDisk_1_cff5c25a6706409cac7860684c60edae')]",
                         "createOption": "FromImage",
                         "caching": "ReadWrite",
-                        "managedDisk": {
-                            "id": "[resourceId('Microsoft.Compute/disks', concat(parameters('virtualMachines_worker_name'), '_OsDisk_1_cff5c25a6706409cac7860684c60edae'))]"
-                        },
                         "deleteOption": "Delete"
                     },
                     "dataDisks": [],
@@ -325,8 +318,7 @@
                         }
                     },
                     "secrets": [],
-                    "allowExtensionOperations": true,
-                    "requireGuestProvisionSignal": true
+                    "allowExtensionOperations": true
                 },
                 "securityProfile": {
                     "uefiSettings": {
@@ -399,9 +391,9 @@
         {
             "type": "Microsoft.Network/virtualNetworks/subnets",
             "apiVersion": "2024-07-01",
-            "name": "[concat(parameters('virtualNetworks_vnet_centralus_name'), '/snet-centralus-1')]",
+            "name": "[concat(parameters('virtualNetworks_vnet_eastus2_name'), '/snet-eastus2-1')]",
             "dependsOn": [
-                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_centralus_name'))]"
+                "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworks_vnet_eastus2_name'))]"
             ],
             "properties": {
                 "addressPrefixes": [
@@ -416,10 +408,10 @@
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2024-07-01",
             "name": "[parameters('networkInterfaces_master839_z1_name')]",
-            "location": "centralus",
+            "location": "eastus2",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_master_ip_name'))]",
-                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_centralus_name'), 'snet-centralus-1')]",
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_eastus2_name'), 'snet-eastus2-1')]",
                 "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_testnsg_name'))]"
             ],
             "kind": "Regular",
@@ -436,7 +428,7 @@
                                 "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_master_ip_name'))]"
                             },
                             "subnet": {
-                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_centralus_name'), 'snet-centralus-1')]"
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_eastus2_name'), 'snet-eastus2-1')]"
                             },
                             "primary": true,
                             "privateIPAddressVersion": "IPv4"
@@ -461,10 +453,10 @@
             "type": "Microsoft.Network/networkInterfaces",
             "apiVersion": "2024-07-01",
             "name": "[parameters('networkInterfaces_worker694_z1_name')]",
-            "location": "centralus",
+            "location": "eastus2",
             "dependsOn": [
                 "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_worker_ip_name'))]",
-                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_centralus_name'), 'snet-centralus-1')]",
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_eastus2_name'), 'snet-eastus2-1')]",
                 "[resourceId('Microsoft.Network/networkSecurityGroups', parameters('networkSecurityGroups_testnsg_name'))]"
             ],
             "kind": "Regular",
@@ -481,7 +473,7 @@
                                 "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPAddresses_worker_ip_name'))]"
                             },
                             "subnet": {
-                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_centralus_name'), 'snet-centralus-1')]"
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', parameters('virtualNetworks_vnet_eastus2_name'), 'snet-eastus2-1')]"
                             },
                             "primary": true,
                             "privateIPAddressVersion": "IPv4"
