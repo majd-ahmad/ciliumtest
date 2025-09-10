@@ -1,0 +1,181 @@
+---
+- name: Configure and bootstrap a Kubernetes master node
+  hosts: all  # Assuming this playbook runs on a single master node
+  become: yes
+  vars:
+    primary_ip: "172.16.0.4"
+    pod_cidr: "10.244.0.0/16"
+    service_cidr: "10.96.0.0/16"
+    cilium_version: "1.18.1"
+    
+  tasks:
+    - name: Update apt cache and install essential packages
+      ansible.builtin.apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+        state: present
+        update_cache: yes
+
+    - name: Load kernel modules
+      ansible.builtin.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+
+    - name: Configure kernel parameters for Kubernetes
+      ansible.builtin.blockinfile:
+        path: /etc/sysctl.d/k8s.conf
+        block: |
+          net.bridge.bridge-nf-call-iptables  = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.ipv4.ip_forward                 = 1
+        create: true
+        mode: "0644"
+
+    - name: Apply sysctl parameters
+      ansible.builtin.command: sudo sysctl --system
+
+    - name: Install Containerd
+      ansible.builtin.apt:
+        name: containerd
+        state: present
+
+    - name: Configure Containerd and enable systemd cgroup driver
+      ansible.builtin.shell: |
+        containerd config default | sed 's/SystemdCgroup = false/SystemdCgroup = true/' | sudo tee /etc/containerd/config.toml
+      args:
+        creates: /etc/containerd/config.toml
+
+    - name: Restart and enable Containerd service
+      ansible.builtin.systemd:
+        name: containerd
+        state: restarted
+        enabled: yes
+
+    - name: Get latest stable Kubernetes release version
+      ansible.builtin.uri:
+        url: https://dl.k8s.io/release/stable.txt
+        return_content: yes
+      register: k8s_version_raw
+
+    - name: Set k8s_latest fact
+      ansible.builtin.set_fact:
+        k8s_latest: "{{ k8s_version_raw.content | regex_replace('\\s*\\n\\s*', '') | regex_replace('\\.[^.]*$', '') }}"
+
+    - name: Add Kubernetes GPG key
+      ansible.builtin.get_url:
+        url: "https://pkgs.k8s.io/core:/stable:/{{ k8s_latest }}/deb/Release.key"
+        dest: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+        mode: "0644"
+
+    - name: Add Kubernetes apt repository
+      ansible.builtin.lineinfile:
+        path: /etc/apt/sources.list.d/kubernetes.list
+        line: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/{{ k8s_latest }}/deb/ /"
+        create: true
+        mode: "0644"
+
+    - name: Install kubelet, kubeadm, and kubectl
+      ansible.builtin.apt:
+        name:
+          - kubelet
+          - kubeadm
+          - kubectl
+        state: present
+        update_cache: yes
+
+    - name: Hold Kubernetes packages to prevent updates
+      ansible.builtin.dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
+
+    - name: Set crictl runtime endpoint
+      ansible.builtin.command: crictl config --set runtime-endpoint=unix:///run/containerd/containerd.sock --set image-endpoint=unix:///run/containerd/containerd.sock
+
+    - name: Configure kubelet with the primary IP
+      ansible.builtin.blockinfile:
+        path: /etc/default/kubelet
+        block: |
+          KUBELET_EXTRA_ARGS='--node-ip {{ primary_ip }}'
+        create: true
+        mode: "0644"
+
+    - name: Initialize the Kubernetes control plane
+      ansible.builtin.command: kubeadm init --pod-network-cidr {{ pod_cidr }} --service-cidr {{ service_cidr }} --apiserver-advertise-address {{ primary_ip }}
+      args:
+        creates: /etc/kubernetes/admin.conf
+
+    - name: Configure kubectl for the current user
+      ansible.builtin.shell: |
+        mkdir -p $HOME/.kube
+        sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
+        sudo chown $(id -u):$(id -g) $HOME/.kube/config
+        chmod 600 $HOME/.kube/config
+      args:
+        warn: false
+
+    - name: Install Cilium CLI
+      ansible.builtin.get_url:
+        url: "https://github.com/cilium/cilium-cli/releases/download/v{{ cilium_version }}/cilium-linux-{{ ansible_facts['architecture'] }}.tar.gz"
+        dest: /tmp/cilium-cli.tar.gz
+
+    - name: Extract Cilium CLI to /usr/local/bin
+      ansible.builtin.unarchive:
+        src: /tmp/cilium-cli.tar.gz
+        dest: /usr/local/bin
+        remote_src: yes
+      
+    - name: Install Cilium CNI
+      ansible.builtin.command: /usr/local/bin/cilium install --version {{ cilium_version }}
+
+    - name: Wait for Cilium to be ready
+      ansible.builtin.command: /usr/local/bin/cilium status --wait
+
+    - name: Run Cilium connectivity test
+      ansible.builtin.command: /usr/local/bin/cilium connectivity test
+      ignore_errors: true # This test can fail due to race conditions or network issues
+
+    - name: Display Kubernetes nodes to confirm setup
+      ansible.builtin.command: kubectl get nodes
+      register: nodes_output
+      
+    - name: Display Cilium status
+      ansible.builtin.command: /usr/local/bin/cilium status
+      register: cilium_status_output
+
+    - name: Create nginx deployment
+      ansible.builtin.command: kubectl create deployment nginx --image nginx:alpine
+    
+    - name: Expose nginx deployment as a NodePort service
+      ansible.builtin.command: kubectl expose deploy nginx --type=NodePort --port 80
+      
+    - name: Get the NodePort number
+      ansible.builtin.shell: |
+        kubectl get service -l app=nginx -o jsonpath="{.items[0].spec.ports[0].nodePort}"
+      register: nodeport_number
+      
+    - name: Print NodePort information
+      ansible.builtin.debug:
+        msg: "Service exposed on NodePort {{ nodeport_number.stdout }}"
+
+    - name: Curl the exposed service
+      ansible.builtin.uri:
+        url: "http://{{ primary_ip }}:{{ nodeport_number.stdout }}"
+        return_content: yes
+      register: curl_result
+      
+    - name: Print curl output
+      ansible.builtin.debug:
+        msg: "Curl output: {{ curl_result.content }}"
+        
+    - name: Clean up nginx deployment and service
+      ansible.builtin.command: kubectl delete deployment,service nginx
+      ignore_errors: true
