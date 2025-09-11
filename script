@@ -1,85 +1,152 @@
 #!/bin/bash
 
-# --- Variables ---
+# --- Kubernetes Control Plane Setup Script ---
+# This script automates the installation and configuration of a Kubernetes cluster
+# using kubeadm, containerd, and Cilium as the CNI.
+#
+# It is designed to be run on a fresh Ubuntu 22.04 LTS system.
+
+# --- Configuration Variables ---
+# Get the primary IP address dynamically.
 PRIMARY_IP=$(ip route | grep default | awk '{ print $9 }')
 POD_CIDR="10.244.0.0/16"
 SERVICE_CIDR="10.96.0.0/16"
 
-echo "PRIMARY_IP: $PRIMARY_IP"
-echo "POD_CIDR: $POD_CIDR"
-echo "SERVICE_CIDR: $SERVICE_CIDR"
+# Get the latest stable Kubernetes version.
+KUBE_LATEST=$(curl -L -s https://dl.k8s.io/release/stable.txt | awk 'BEGIN { FS="." } { printf "%s.%s", $1, $2 }')
 
-# --- Install dependencies ---
+# Display the detected IP for user confirmation.
+echo "Detected primary IP address: $PRIMARY_IP"
+echo "Using Pod CIDR: $POD_CIDR"
+echo "Using Service CIDR: $SERVICE_CIDR"
+
+## 1. System Preparation
+
+# Update package lists and install essential tools.
+echo "--- 1. Updating system and installing dependencies ---"
 sudo apt-get update
 sudo apt-get install -y apt-transport-https ca-certificates curl
 
-# --- Configure kernel modules ---
+## 2. Kernel Module and System Settings
+
+# Configure the Linux kernel to support Kubernetes' networking.
+echo "--- 2. Loading kernel modules and configuring sysctl ---"
+
+# Add the overlay and br_netfilter kernel modules.
 cat <<EOF | sudo tee /etc/modules-load.d/k8s.conf
 overlay
 br_netfilter
 EOF
 
-# --- Load kernel modules ---
+# Load the modules immediately.
 sudo modprobe overlay
 sudo modprobe br_netfilter
 
-# --- Configure sysctl ---
+# Enable networking settings for Kubernetes.
 cat <<EOF | sudo tee /etc/sysctl.d/k8s.conf
-net.bridge.bridge-nf-call-iptables  = 1
+net.bridge.bridge-nf-call-iptables = 1
 net.bridge.bridge-nf-call-ip6tables = 1
-net.ipv4.ip_forward                 = 1
+net.ipv4.ip_forward = 1
 EOF
 
-# --- Apply sysctl changes ---
+# Apply the new sysctl settings.
 sudo sysctl --system
 
-# --- Install containerd ---
+## 3. Containerd Setup
+
+# Install and configure Containerd as the container runtime.
+echo "--- 3. Installing and configuring containerd ---"
+
+# Install the containerd package.
 sudo apt-get install -y containerd
 
-# --- Configure and restart containerd ---
+# Generate the default containerd configuration file.
 sudo mkdir -p /etc/containerd
+
+# Configure Containerd to use `systemd` for the cgroup driver.
 containerd config default | sed 's/SystemdCgroup = false/SystemdCgroup = true/' | sudo tee /etc/containerd/config.toml
+
+# Restart the containerd service to apply the new configuration.
 sudo systemctl restart containerd
+
+# Check the status of the containerd service to ensure it's running.
 sudo systemctl status containerd
 
-# --- Configure crictl to use containerd ---
-sudo crictl config --set runtime-endpoint=unix:///run/containerd/containerd.sock --set image-endpoint=unix:///run/containerd/containerd.sock
+## 4. Install Kubeadm, Kubelet, and Kubectl
 
-# --- Get latest Kubernetes version ---
-KUBE_LATEST=$(curl -L -s https://dl.k8s.io/release/stable.txt | awk 'BEGIN { FS="." } { printf "%s.%s", $1, $2 }')
+# Add Kubernetes APT repository and install the core tools.
+echo "--- 4. Installing kubeadm, kubelet, and kubectl ---"
 
-# --- Add Kubernetes GPG key ---
 sudo mkdir -p /etc/apt/keyrings
-curl -fsSL https://pkgs.k8s.io/core:/stable:/${KUBE_LATEST}/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
-
-# --- Add Kubernetes APT repository ---
+curl -fsSL "https://pkgs.k8s.io/core:/stable:/${KUBE_LATEST}/deb/Release.key" | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
 echo "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/${KUBE_LATEST}/deb/ /" | sudo tee /etc/apt/sources.list.d/kubernetes.list
 
-# --- Install kubelet, kubeadm, and kubectl ---
 sudo apt-get update
 sudo apt-get install -y kubelet kubeadm kubectl
 sudo apt-mark hold kubelet kubeadm kubectl
 
-# --- Initialize Kubernetes Control Plane ---
-sudo kubeadm init --pod-network-cidr $POD_CIDR --service-cidr $SERVICE_CIDR --apiserver-advertise-address $PRIMARY_IP
+## 5. Configure Kubelet and Initialize Control Plane
 
-# --- Configure kubectl ---
-mkdir -p $HOME/.kube
-sudo cp -i /etc/kubernetes/admin.conf $HOME/.kube/config
-sudo chown $(id -u):$(id -g) $HOME/.kube/config
-chmod 600 $HOME/.kube/config
+# Configure `crictl` to use the containerd socket.
+echo "--- 5. Configuring Kubelet and initializing the control plane ---"
+sudo crictl config --set runtime-endpoint=unix:///run/containerd/containerd.sock --set image-endpoint=unix:///run/containerd/containerd.sock
 
-# --- Verify cluster health ---
+# Configure kubelet to use the primary IP address.
+cat <<EOF | sudo tee /etc/default/kubelet
+KUBELET_EXTRA_ARGS='--node-ip ${PRIMARY_IP}'
+EOF
+
+# Initialize the Kubernetes control plane.
+# NOTE: This command should only be run on the master node.
+sudo kubeadm init --pod-network-cidr "${POD_CIDR}" --service-cidr "${SERVICE_CIDR}" --apiserver-advertise-address "${PRIMARY_IP}"
+
+## 6. Configure Kubectl Access
+
+# Set up kubectl configuration for the current user.
+echo "--- 6. Configuring kubectl access for the current user ---"
+mkdir -p "$HOME/.kube"
+sudo cp /etc/kubernetes/admin.conf "$HOME/.kube/config"
+sudo chown "$(id -u):$(id -g)" "$HOME/.kube/config"
+chmod 600 "$HOME/.kube/config"
+
+# Verify that the cluster is ready.
+echo "--- Verifying pods in the kube-system namespace ---"
 kubectl get pods -n kube-system
 
-# --- Install Cilium CNI ---
+## 7. Install Cilium CLI and CNI
+
+# Install the Cilium command-line interface.
+echo "--- 7. Installing Cilium CLI ---"
 CILIUM_CLI_VERSION=$(curl -s https://raw.githubusercontent.com/cilium/cilium-cli/main/stable.txt)
 CLI_ARCH=amd64
 if [ "$(uname -m)" = "aarch64" ]; then CLI_ARCH=arm64; fi
-curl -L --fail --remote-name-all https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz{,.sha256sum}
-sha256sum --check cilium-linux-${CLI_ARCH}.tar.gz.sha256sum
-sudo tar xzvfC cilium-linux-${CLI_ARCH}.tar.gz /usr/local/bin
+curl -L --fail --remote-name-all "https://github.com/cilium/cilium-cli/releases/download/${CILIUM_CLI_VERSION}/cilium-linux-${CLI_ARCH}.tar.gz"{,.sha256sum}
+sha256sum --check "cilium-linux-${CLI_ARCH}.tar.gz.sha256sum"
+sudo tar xzvfC "cilium-linux-${CLI_ARCH}.tar.gz" /usr/local/bin
 
+# Install Cilium using its CLI.
+echo "--- Installing Cilium CNI ---"
+# NOTE: The 'cilium install' command is duplicated in the original request.
+# I've included it once for a complete script.
 cilium install --version 1.18.1
+
+# Wait for Cilium to be ready and run connectivity tests.
+echo "--- Waiting for Cilium to be ready and running connectivity tests ---"
 cilium status --wait
 cilium connectivity test
+
+## 8. Final Verification
+
+# Verify that the cluster and pods are running correctly.
+echo "--- Verifying cluster status after Cilium installation ---"
+kubectl get pods -n kube-system
+kubectl get nodes
+
+# --- IMPORTANT NOTE ON KUBEADM JOIN ---
+# The following 'kubeadm join' command is for adding a worker node and will not
+# work on the master node. The token and hash values must be copied from the
+# output of the 'kubeadm init' command on a real cluster.
+echo "--- Kubeadm Join Command ---"
+echo "The following command is a placeholder and should only be used on worker nodes:"
+echo "sudo kubeadm join 172.16.0.4:6443 --token yx6dpl.r5gup4i4sf9p71l4 \\"
+echo "--discovery-token-ca-cert-hash sha256:your-hash-here"
