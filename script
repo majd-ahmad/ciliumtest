@@ -142,7 +142,4 @@ kubectl get nodes
 # The following 'kubeadm join' command is for adding a worker node and will not
 # work on the master node. The token and hash values must be copied from the
 # output of the 'kubeadm init' command on a real cluster.
-echo "--- Kubeadm Join Command ---"
-echo "The following command is a placeholder and should only be used on worker nodes:"
-echo "sudo kubeadm join 172.16.0.4:6443 --token yx6dpl.r5gup4i4sf9p71l4 \\"
-echo "--discovery-token-ca-cert-hash sha256:your-hash-here"
+kubeadm token create --print-join-command
