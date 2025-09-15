@@ -307,7 +307,7 @@
                             "publicKeys": [
                                 {
                                     "path": "/home/azureuser/.ssh/authorized_keys",
-                                    "keyData": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDNFQh1Bf+u6foMBTqslns6RkORjYZFeoBFrKTjsSrL7Z9urtBHrbnLa4g1uRwZsF8fnac+C43OFYOzLcNdWyAircTFlBWOYjTZrbqqJZDOE8DaFfm3TVAJQ4ZYsyQ/Arab64GHmIX6aqzTtreoXFyuOJgktC7Kvg3162K6HF1d1loCFwc6Ya6WXmkJA1O0ZRw+ADHlWdh2jeW62KUW3CI3pDvS55+S9NkRiHpVnCFbNcXUvEppTEu3VbVrH0xdtxZ259T/Xn3fszoU3ofhUP1LDdEp4LM3wrsNoNZzf0/c6mt0GDDLd+hpYL+oYEdc1/CZFdvAddwkhHu/x2bt+lbwIrlTr8XBKndxZHVQeo+QoD8J8ZJdZz4UVdLK1R6CBuTsAcD53Nrqhl5BxsHObRjxUAPefZcBybJAsJUo74NAcQOoAHsa7R6dZMCYe0EcAiT1IPyX/tLMw1d+xzXGUGKWyu8wWKp2hpEVDvTFfOB4Zsru5ki5c2OYSdLcaAO0FKE= generated-by-azure"
+                                    "keyData": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC8KF16CbC0dCnIC7Q//bjntDfGUAErLnXcwyxC6dcBYq5HRLszdAMZxolm+qfvWuFOArTtMqQaLZPn1gkH5PYYWpdjBnx2dKqGqklTjy9/fveMwNxK2fR2IjZc70yNmunHlS/qMhdM8ojROTR/xRUORa+PJmK6eKehXUR1Fp9DqrA9NiGK6X0JJ7sy722gFlNrzGGasKOJaWHNNqYHDGoFZIto2qHRJZmxDt5Uk7EXxnl+ViGt7dMD5sOp2R49eJewN40u3Iu4qWurHdPolH0SIYXmQNEp8UJR+52spJ352HFopUqE9qgAHR5q2mckKctEb77bjhO9vdmgtkuNItPvaEptXLU6vizvnf8aZkiJR+pI6+knjdwdfJNRhkV42CYyVSkmMsu3gEebz/lHatNjahiDnkKSbCrFvw01S13qD5PrzCT7fgT6pJI93Bxk8n4m1YiIcN1362UJUF39GyE9WR2bgmQavQACABtbwcWCpHJpjfINgBTCB60+BcPXswk= generated-by-azure"
                                 }
                             ]
                         },
