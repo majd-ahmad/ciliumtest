@@ -68,10 +68,6 @@ containerd config default | sed 's/SystemdCgroup = false/SystemdCgroup = true/' 
 
 # Restart the containerd service to apply the new configuration.
 sudo systemctl restart containerd
-
-# Check the status of the containerd service to ensure it's running.
-sudo systemctl status containerd
-
 ## 4. Install Kubeadm, Kubelet, and Kubectl
 
 # Add Kubernetes APT repository and install the core tools.
